@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Uso de Equipamentos - Maker Bicudo 2024</title>
+    <style>
+        /* styles.css */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1, h2 {
+            text-align: center;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .form-section {
+            margin-bottom: 20px;
+        }
+
+        .upload-section {
+            margin-bottom: 20px;
+        }
+
+        .record-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .record-item.returned {
+            background-color: lightgreen;
+        }
+
+        .small-button {
+            padding: 5px 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .print-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .print-button:hover {
+            background-color: #0056b3;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .record-info {
+            flex: 1;
+        }
+
+        .button-container {
+            flex-shrink: 0;
+            margin-left: 10px;
+            display: flex;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Controle de Uso de Equipamentos</h1>
+        <h2> Bicudo 2024</h2>
+    </header>
+    <div class="container">
+        <div class="form-section">
+            <form id="controlForm">
+                <label for="studentName">Nome do Responsavel:</label>
+                <input type="text" id="studentName" required>
+                
+                <label for="piece">Peça:</label>
+                <input type="text" id="piece" required>
+                
+                <button type="button" onclick="addRecord()">Registrar</button>
+            </form>
+        </div>
+
+        <div class="upload-section">
+            <label for="studentFile">Carregar Lista de Alunos:</label>
+            <input type="file" id="studentFile" accept=".txt" onchange="loadStudentList()">
+        </div>
+
+        <div id="records">
+            <h2>Registros</h2>
+            <ul id="recordList"></ul>
+        </div>
+
+        <div class="button-section">
+            <button onclick="printRecords()" class="print-button">Imprimir Registros</button>
+        </div>
+    </div>
+
+    <script>
+        // script.js
+        let records = [];
+
+        function addRecord() {
+            const studentName = document.getElementById('studentName').value;
+            const piece = document.getElementById('piece').value;
+
+            if (studentName && piece) {
+                const record = {
+                    studentName: studentName,
+                    piece: piece,
+                    status: 'Registrado',
+                    timestamp: new Date().toLocaleString(),
+                    returned: false
+                };
+
+                records.push(record);
+                displayRecords();
+                clearForm();
+            } else {
+                alert("Por favor, preencha todos os campos.");
+            }
+        }
+
+        function displayRecords() {
+            const recordList = document.getElementById('recordList');
+            recordList.innerHTML = '';
+
+            records.forEach(record => {
+                const listItem = document.createElement('li');
+                listItem.classList.add('record-item');
+
+                if (record.returned) {
+                    listItem.classList.add('returned');
+                }
+
+                listItem.innerHTML = `
+                    <div class="record-info">
+                        <span>${record.timestamp}</span>
+                        <span>${record.studentName} ${record.status} a peça: ${record.piece}</span>
+                    </div>
+                    <div class="button-container">
+                        <button onclick="markReturned('${record.studentName}')" class="small-button">Devolver</button>
+                        <button onclick="deleteRecord('${record.studentName}')" class="small-button">Deletar</button>
+                    </div>
+                `;
+                recordList.appendChild(listItem);
+            });
+        }
+
+        function clearForm() {
+            document.getElementById('studentName').value = '';
+            document.getElementById('piece').value = '';
+        }
+
+        function markReturned(studentName) {
+            const index = records.findIndex(record => record.studentName === studentName);
+            if (index !== -1) {
+                records[index].status = 'Devolvido';
+                records[index].returned = true;
+                displayRecords();
+            }
+        }
+
+        function deleteRecord(studentName) {
+            const index = records.findIndex(record => record.studentName === studentName);
+            if (index !== -1) {
+                records.splice(index, 1);
+                displayRecords();
+            }
+        }
+
+        function printRecords() {
+            const printWindow = window.open('', '', 'width=800,height=600');
+            printWindow.document.write('<html><head><title>Registros de Peças</title></head><body>');
+            printWindow.document.write('<h1>Registros de Peças - Maker Bicudo 2024</h1>');
+            printWindow.document.write('<ul>');
+            records.forEach(record => {
+                printWindow.document.write(`<li>${record.timestamp} - ${record.studentName} ${record.status} a peça: ${record.piece}</li>`);
+            });
+            printWindow.document.write('</ul></body></html>');
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        function loadStudentList() {
+            const fileInput = document.getElementById('studentFile');
+            const file = fileInput.files[0];
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const text = e.target.result;
+                    const lines = text.split('\n');
+                    lines.forEach(line => {
+                        const studentName = line.trim();
+                        if (studentName) {
+                            const record = {
+                                studentName: studentName,
+                                piece: '',
+                                status: 'Registrado',
+                                timestamp: new Date().toLocaleString(),
+                                returned: false
+                            };
+                            records.push(record);
+                        }
+                    });
+                    displayRecords();
+                };
+                reader.readAsText(file);
+            } else {
+                alert('Por favor, selecione um arquivo.');
+            }
+        }
+    </script>
+</body>
+</html>
